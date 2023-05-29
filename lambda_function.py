@@ -30,6 +30,9 @@ from oauth2client.service_account import ServiceAccountCredentials
 BUCKET_NAME = "linebot-json"
 object_key_name = "work_chedule.json"
 
+session = boto3.session.Session()
+s3_client = session.client("s3")    
+
 logger = logging.getLogger()
 logger.setLevel(logging.ERROR)
 
@@ -239,13 +242,13 @@ def lambda_handler(event, context):
             if check_s3_key_exists(object_key_name):
                 print('オブジェクトは存在しています.')
                 # オブジェクトを生成
-                s3 = boto3.Session(region_name=None).resource('s3')
-                obj = s3.Object(BUCKET_NAME,object_key_name)
+                #s3 = boto3.Session(region_name=None).resource('s3')
+                #obj = s3.Object(BUCKET_NAME,object_key_name)
                 # ファイルを読み込む
-                response = obj.get()    
-                body = response['Body'].read()
-                item_dict = json.loads(body)
-                print(item_dict.get("userid"))
+                #response = obj.get()    
+                #body = response['Body'].read()
+                #item_dict = json.loads(body)
+                #print(item_dict.get("userid"))
                 #print(item_dict.get("2023-05-20"))
                 #print(item_dict.get("2023-05-21"))
                 #if event.postback.params['date'] in item_dict.keys():
@@ -259,6 +262,18 @@ def lambda_handler(event, context):
                 #item_dict[event.postback.params['date']] = intWages
                 #←変数をJSON変換し S3にPUTする
                 #obj.put(Body = json.dumps(item_dict, ensure_ascii=False))
+
+                print("1")
+                s3_client = boto3.client('s3')
+                print("2")
+                obj = s3_client.get_object(Bucket=BUCKET_NAME, Key=object_key_name)
+                print("3")
+                body = obj['Body'].read()
+                print("4")
+                bodystr = body.decode('utf-8')
+                js = json.loads(bodystr) 
+                print("5")
+                print(js)
             else:
                 print('オブジェクトは存在していません.')
                 #json_data={event.postback.params['date']: intWages}
@@ -286,13 +301,13 @@ def lambda_handler(event, context):
 
 def check_s3_key_exists(key):
 
-    session = boto3.session.Session()
-    s3_client = session.client("s3")    
+    #session = boto3.session.Session()
+    #s3_client = session.client("s3")    
 
     try:
         s3_client.head_object(
             Bucket = BUCKET_NAME,
-            Key = object_key_name,
+            Key = object_key_name
         )       
         return True
     except ClientError:
