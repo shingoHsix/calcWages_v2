@@ -26,7 +26,6 @@ from botocore.errorfactory import ClientError
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
-s3 = boto3.resource('s3')
 # バケット名を指定
 BUCKET_NAME = "linebot-json"
 object_key_name = "work_chedule.json"
@@ -237,18 +236,18 @@ def lambda_handler(event, context):
 
         if podtback_msg == "action=buy&itemid=1":
 
-            # オブジェクトを生成
-            session = boto3.Session(region_name=None).resource('s3')
-            obj = session.Object(BUCKET_NAME,object_key_name)
-
             if check_s3_key_exists(object_key_name):
                 print('オブジェクトは存在しています.')
+                # オブジェクトを生成
+                s3 = boto3.Session(region_name=None).resource('s3')
+                obj = s3.Object(BUCKET_NAME,object_key_name)
                 # ファイルを読み込む
                 response = obj.get()    
                 body = response['Body'].read()
                 item_dict = json.loads(body)
-                print(item_dict.get("2023-05-20"))
-                print(item_dict.get("2023-05-21"))
+                print(item_dict.get("userid"))
+                #print(item_dict.get("2023-05-20"))
+                #print(item_dict.get("2023-05-21"))
                 #if event.postback.params['date'] in item_dict.keys():
                     #キーは存在（上書き）
                     #print(item_dict.get("2023-05-21"))
@@ -256,15 +255,21 @@ def lambda_handler(event, context):
                 #else:
                     #キーなし（挿入）
                     #print("none")
-                item_dict[event.postback.params['date']] = intWages
-                #←変数をJSON変換し S3にPUTする
-                obj.put(Body = json.dumps(item_dict, ensure_ascii=False)) 
 
+                #item_dict[event.postback.params['date']] = intWages
+                #←変数をJSON変換し S3にPUTする
+                #obj.put(Body = json.dumps(item_dict, ensure_ascii=False))
             else:
                 print('オブジェクトは存在していません.')
-                json_data={event.postback.params['date']: intWages}
+                #json_data={event.postback.params['date']: intWages}
                 #←変数をJSON変換し S3にPUTする
-                obj.put(Body = json.dumps(json_data, ensure_ascii=False)) 
+                #obj.put(Body = json.dumps(json_data, ensure_ascii=False)) 
+                s3 = boto3.resource('s3')
+                # オブジェクトを生成
+                bucket = s3.Bucket(BUCKET_NAME)
+                obj = bucket.Object(object_key_name)
+                wklist ={"userid" : UserID, "list":[{"date":event.postback.params['date'],"intWages":intWages}]}
+                obj.put(Body = json.dumps(wklist, ensure_ascii=False))
 
 #例外処理としての動作
     try:
